@@ -1,7 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-async function getMarketPrice(symbol) {
+export async function getMarketPrice(symbol) {
     try {
         const url = `https://merolagani.com/CompanyDetail.aspx?symbol=${symbol}`;
         const response = await axios.get(url);

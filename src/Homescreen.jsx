@@ -1,49 +1,56 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import axios from 'axios';
+import cheerio from 'cheerio';
 
-const Homescreen = () => {
+const HomeScreen = () => {
+  const [marketPrice, setMarketPrice] = useState('Loading...');
+  const [refreshing, setRefreshing] = useState(false);
+  const minutes=1;
+
+  const getMarketPrice = async () => {
+    try {
+      const symbol = 'KSBBL';
+      const url = `https://merolagani.com/CompanyDetail.aspx?symbol=${symbol}`;
+      const response = await axios.get(url);
+      
+      const $ = cheerio.load(response.data);
+      const marketPriceElement = $('#ctl00_ContentPlaceHolder1_CompanyDetail1_lblMarketPrice');
+      const marketPrice = marketPriceElement.text().trim();
+      
+      setMarketPrice(marketPrice);
+      console.log('Market price of KSBBL:', marketPrice);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setMarketPrice('N/A');
+    }
+  };
+
+  useEffect(() => {
+    getMarketPrice();
+
+    const interval = setInterval(() => {
+      getMarketPrice();
+    }, minutes*60*1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    getMarketPrice().then(() => setRefreshing(false));
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.row}>
-        <View style={styles.column}>
-          <Text style={styles.text}>Symbol</Text>
-        </View>
-        <View style={styles.separator} />
-        <View style={styles.column}>
-          <Text style={styles.text}>LTP</Text>
-        </View>
-      </View>
-    </View>
+    <ScrollView
+      contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      <Text>KSBBL: {marketPrice}</Text>
+    </ScrollView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 30,
-  },
-  row: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: 'black',
-    margin: 10,
-  },
-  column: {
-    flex: 1,
-    padding: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  separator: {
-    width: 1,
-    backgroundColor: 'black',
-  },
-  text: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-});
-
-export default Homescreen;
+export default HomeScreen;
